@@ -1,0 +1,1468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CalTrac - Calorie Tracker</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --accent: #f093fb;
+            --light: #f9f9f9;
+            --text: #333;
+            --border: #ddd;
+        }
+
+        body.dark-mode {
+            --primary: #7c8ff0;
+            --secondary: #9d5fd7;
+            --light: #1a1a1a;
+            --text: #e0e0e0;
+            --border: #444;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text);
+            transition: all 0.3s ease;
+        }
+
+        body.dark-mode {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 5px;
+            flex: 1;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+            flex: 1;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .theme-toggle, .data-btn {
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.2s;
+        }
+
+        .theme-toggle:hover, .data-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        body.dark-mode .card {
+            background: #2d2d2d;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .daily-summary {
+            text-align: center;
+        }
+
+        .calories-display {
+            font-size: 3em;
+            font-weight: bold;
+            color: var(--primary);
+            margin: 20px 0;
+        }
+
+        .calories-target {
+            color: #666;
+            font-size: 1.1em;
+            margin-bottom: 20px;
+        }
+
+        body.dark-mode .calories-target {
+            color: #999;
+        }
+
+        .progress-bar {
+            background: #e0e0e0;
+            height: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        body.dark-mode .progress-bar {
+            background: #444;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.75em;
+            font-weight: bold;
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .summary-card {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        body.dark-mode .summary-card {
+            background: #3d3d3d;
+        }
+
+        .summary-card h4 {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+        }
+
+        body.dark-mode .summary-card h4 {
+            color: #999;
+        }
+
+        .summary-card .value {
+            font-size: 1.6em;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .date-picker-section {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .date-nav {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .date-nav button {
+            padding: 8px 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .date-nav button:hover {
+            opacity: 0.9;
+        }
+
+        .current-date {
+            font-size: 1.1em;
+            color: var(--primary);
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .date-picker-input {
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        body.dark-mode .date-picker-input {
+            background: #3d3d3d;
+            color: white;
+            border-color: #555;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .action-btn {
+            padding: 8px 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .action-btn:hover {
+            opacity: 0.9;
+        }
+
+        .action-btn.secondary {
+            background: #999;
+        }
+
+        .search-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .search-group input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 1em;
+        }
+
+        body.dark-mode .search-group input {
+            background: #3d3d3d;
+            color: white;
+            border-color: #555;
+        }
+
+        .search-group button {
+            padding: 12px 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .search-group button:hover {
+            opacity: 0.9;
+        }
+
+        .recent-foods {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .recent-food-btn {
+            padding: 6px 12px;
+            background: #f0f0f0;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: all 0.2s;
+        }
+
+        body.dark-mode .recent-food-btn {
+            background: #3d3d3d;
+            border-color: #555;
+            color: white;
+        }
+
+        .recent-food-btn:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .search-results {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: white;
+        }
+
+        body.dark-mode .search-results {
+            background: #3d3d3d;
+            border-color: #555;
+        }
+
+        .search-result-item {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s;
+        }
+
+        .search-result-item:hover {
+            background: #f5f5f5;
+        }
+
+        body.dark-mode .search-result-item:hover {
+            background: #4d4d4d;
+        }
+
+        .food-info {
+            flex: 1;
+        }
+
+        .food-name {
+            font-weight: bold;
+            color: var(--text);
+        }
+
+        .food-calories {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        body.dark-mode .food-calories {
+            color: #999;
+        }
+
+        .add-btn {
+            padding: 6px 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+
+        .add-btn:hover {
+            opacity: 0.9;
+        }
+
+        .portion-input {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .portion-input input {
+            width: 80px;
+            padding: 8px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+        }
+
+        body.dark-mode .portion-input input {
+            background: #3d3d3d;
+            color: white;
+            border-color: #555;
+        }
+
+        .meal-item {
+            background: #f9f9f9;
+            padding: 12px;
+            border-left: 4px solid var(--primary);
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 4px;
+        }
+
+        body.dark-mode .meal-item {
+            background: #3d3d3d;
+        }
+
+        .meal-item:nth-child(4n+1) {
+            border-left-color: #667eea;
+        }
+
+        .meal-item:nth-child(4n+2) {
+            border-left-color: #f093fb;
+        }
+
+        .meal-item:nth-child(4n+3) {
+            border-left-color: #4facfe;
+        }
+
+        .meal-item:nth-child(4n+4) {
+            border-left-color: #43e97b;
+        }
+
+        .meal-item-info {
+            flex: 1;
+        }
+
+        .meal-item-name {
+            font-weight: bold;
+            color: var(--text);
+        }
+
+        .meal-item-details {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        body.dark-mode .meal-item-details {
+            color: #999;
+        }
+
+        .meal-item-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .delete-btn, .edit-btn {
+            padding: 6px 12px;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+
+        .delete-btn {
+            background: #ff6b6b;
+        }
+
+        .delete-btn:hover {
+            background: #ee5a52;
+        }
+
+        .edit-btn {
+            background: #4facfe;
+        }
+
+        .edit-btn:hover {
+            background: #3d9cfd;
+        }
+
+        .charts-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        body.dark-mode .chart-card {
+            background: #2d2d2d;
+        }
+
+        .chart-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
+        }
+
+        .chart-card h3 {
+            margin-bottom: 15px;
+            color: var(--text);
+            font-size: 1.1em;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+        }
+
+        .macro-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .macro-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .macro-card.carbs {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .macro-card.fat {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .macro-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .macro-current {
+            font-size: 1.8em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .macro-target {
+            font-size: 0.75em;
+            opacity: 0.85;
+            line-height: 1.3;
+        }
+
+        .macro-bar {
+            background: rgba(255, 255, 255, 0.3);
+            height: 6px;
+            border-radius: 3px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .macro-bar-fill {
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .empty-message {
+            text-align: center;
+            color: #999;
+            padding: 20px;
+        }
+
+        .weekly-stats {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+
+        .day-stat {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.9em;
+        }
+
+        .day-stat.completed {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+
+        .day-stat.over {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
+        .day-name {
+            font-size: 0.75em;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .day-calories {
+            font-size: 1.3em;
+            font-weight: bold;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            width: 90%;
+        }
+
+        body.dark-mode .modal {
+            background: #2d2d2d;
+            color: white;
+        }
+
+        .modal h2 {
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+
+        .modal p {
+            margin-bottom: 20px;
+            color: #666;
+        }
+
+        body.dark-mode .modal p {
+            color: #999;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .modal-buttons .confirm {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .modal-buttons .cancel {
+            background: #ccc;
+        }
+
+        .error {
+            background: #fff3cd;
+            color: #856404;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .loading {
+            text-align: center;
+            color: var(--primary);
+            padding: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+
+            .macro-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .weekly-stats {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .header-controls {
+                width: 100%;
+                justify-content: center;
+                margin-top: 10px;
+            }
+
+            .date-picker-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .date-nav {
+                justify-content: space-between;
+            }
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const API_KEY = '92eZkMmXT8kvSVBdyk1JD7gToEIxMYHrwoofr2pz';
+        const API_URL = 'https://api.nal.usda.gov/fdc/v1/foods/search';
+
+        function CalorieTracker() {
+            const BACKUP_SERVER = 'https://caltrac-backup.onrender.com';
+
+            const [deviceId, setDeviceId] = React.useState(() => {
+                let id = localStorage.getItem('deviceId');
+                if (!id) {
+                    id = 'device_' + Math.random().toString(36).substr(2, 9);
+                    localStorage.setItem('deviceId', id);
+                }
+                return id;
+            });
+
+            const [darkMode, setDarkMode] = React.useState(() => localStorage.getItem('darkMode') === 'true');
+            const [dailyTarget, setDailyTarget] = React.useState(() => parseInt(localStorage.getItem('dailyTarget') || '2000'));
+            const [cloudStatus, setCloudStatus] = React.useState('idle');
+            const [lastBackup, setLastBackup] = React.useState(() => localStorage.getItem('lastBackup') || 'Never');
+            const backupTimeoutRef = React.useRef(null);
+            const [selectedDate, setSelectedDate] = React.useState(() => new Date().toISOString().split('T')[0]);
+            const [allMeals, setAllMeals] = React.useState(() => JSON.parse(localStorage.getItem('allMeals') || '{}'));
+            const [recentFoods, setRecentFoods] = React.useState(() => JSON.parse(localStorage.getItem('recentFoods') || '[]'));
+            const [searchQuery, setSearchQuery] = React.useState('');
+            const [searchResults, setSearchResults] = React.useState([]);
+            const [loading, setLoading] = React.useState(false);
+            const [selectedFood, setSelectedFood] = React.useState(null);
+            const [portionSize, setPortionSize] = React.useState('100');
+            const [error, setError] = React.useState('');
+            const [success, setSuccess] = React.useState('');
+            const [showConfirm, setShowConfirm] = React.useState(false);
+            const [editingMeal, setEditingMeal] = React.useState(null);
+            const [burnedCalories, setBurnedCalories] = React.useState(() => parseInt(localStorage.getItem('burnedCalories_' + selectedDate) || '0'));
+            const [activityLevel, setActivityLevel] = React.useState(() => localStorage.getItem('activityLevel_' + selectedDate) || '0');
+            const [targetInput, setTargetInput] = React.useState(dailyTarget.toString());
+
+            const weeklyChartRef = React.useRef(null);
+            const mealChartRef = React.useRef(null);
+            const macroChartRef = React.useRef(null);
+            const weeklyChartInstance = React.useRef(null);
+            const mealChartInstance = React.useRef(null);
+            const macroChartInstance = React.useRef(null);
+
+            const meals = allMeals[selectedDate] || {};
+
+            // Auto-backup to cloud
+            const backupToCloud = React.useCallback(async (mealsData = allMeals) => {
+                try {
+                    setCloudStatus('backing up...');
+                    const response = await fetch(`${BACKUP_SERVER}/api/backup`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            deviceId,
+                            meals: mealsData,
+                            dailyTarget,
+                            recentFoods
+                        })
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        localStorage.setItem('lastBackup', data.lastSaved);
+                        setLastBackup(data.lastSaved);
+                        setCloudStatus('✓ backed up');
+                        setTimeout(() => setCloudStatus('idle'), 3000);
+                    } else {
+                        setCloudStatus('backup failed');
+                        setTimeout(() => setCloudStatus('idle'), 3000);
+                    }
+                } catch (err) {
+                    setCloudStatus('offline');
+                }
+            }, [deviceId, dailyTarget, recentFoods]);
+
+            const restoreFromCloud = React.useCallback(async () => {
+                try {
+                    setCloudStatus('restoring...';
+                    const response = await fetch(`${BACKUP_SERVER}/api/restore/${deviceId}`);
+                    const result = await response.json();
+
+                    if (result.success) {
+                        setAllMeals(result.data.meals);
+                        setDailyTarget(result.data.dailyTarget);
+                        setRecentFoods(result.data.recentFoods || []);
+                        setLastBackup(result.data.lastSaved);
+                        setSuccess('Data restored from cloud!');
+                        setCloudStatus('✓ restored');
+                        setTimeout(() => setCloudStatus('idle'), 3000);
+                        setTimeout(() => setSuccess(''), 3000);
+                    } else {
+                        setError(result.error || 'No cloud backup found');
+                        setCloudStatus('no backup');
+                        setTimeout(() => setCloudStatus('idle'), 3000);
+                        setTimeout(() => setError(''), 3000);
+                    }
+                } catch (err) {
+                    setError('Failed to restore from cloud');
+                    setCloudStatus('offline');
+                    setTimeout(() => setCloudStatus('idle'), 3000);
+                    setTimeout(() => setError(''), 3000);
+                }
+            }, [deviceId]);
+
+            React.useEffect(() => {
+                localStorage.setItem('allMeals', JSON.stringify(allMeals));
+
+                // Auto-backup after data changes
+                if (backupTimeoutRef.current) clearTimeout(backupTimeoutRef.current);
+                backupTimeoutRef.current = setTimeout(() => {
+                    backupToCloud(allMeals);
+                }, 2000);
+
+                return () => clearTimeout(backupTimeoutRef.current);
+            }, [allMeals, backupToCloud]);
+
+            React.useEffect(() => {
+                localStorage.setItem('darkMode', darkMode);
+                if (darkMode) document.body.classList.add('dark-mode');
+                else document.body.classList.remove('dark-mode');
+            }, [darkMode]);
+
+            React.useEffect(() => {
+                localStorage.setItem('recentFoods', JSON.stringify(recentFoods));
+            }, [recentFoods]);
+
+            React.useEffect(() => {
+                localStorage.setItem('burnedCalories_' + selectedDate, burnedCalories);
+            }, [burnedCalories, selectedDate]);
+
+            React.useEffect(() => {
+                localStorage.setItem('activityLevel_' + selectedDate, activityLevel);
+            }, [activityLevel, selectedDate]);
+
+            const updateMeals = (mealType, newMealList) => {
+                setAllMeals(prev => ({
+                    ...prev,
+                    [selectedDate]: { ...prev[selectedDate], [mealType]: newMealList }
+                }));
+            };
+
+            const changeDate = (days) => {
+                const date = new Date(selectedDate);
+                date.setDate(date.getDate() + days);
+                setSelectedDate(date.toISOString().split('T')[0]);
+                setBurnedCalories(parseInt(localStorage.getItem('burnedCalories_' + date.toISOString().split('T')[0]) || '0'));
+                setActivityLevel(localStorage.getItem('activityLevel_' + date.toISOString().split('T')[0]) || '0');
+            };
+
+            const formatDateDisplay = (dateStr) => {
+                const date = new Date(dateStr + 'T00:00:00');
+                return date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+            };
+
+            const addRecentFood = (food) => {
+                const updated = [food, ...recentFoods.filter(f => f.fdcId !== food.fdcId)].slice(0, 8);
+                setRecentFoods(updated);
+            };
+
+            const searchFoods = async (e) => {
+                e.preventDefault();
+                if (!searchQuery.trim()) return;
+                setLoading(true);
+                setError('');
+                try {
+                    const response = await fetch(`${API_URL}?query=${encodeURIComponent(searchQuery)}&pageSize=15&api_key=${API_KEY}`);
+                    const data = await response.json();
+                    setSearchResults(data.foods || []);
+                } catch (err) {
+                    setError('Failed to search foods. Please try again.');
+                }
+                setLoading(false);
+            };
+
+            const getNutrient = (food, nutrientId) => {
+                const nutrients = food.foodNutrients || [];
+                const nutrient = nutrients.find(n => n.nutrientId === nutrientId);
+                return nutrient ? nutrient.value : 0;
+            };
+
+            const getCaloriesPerGram = (food) => getNutrient(food, 1008) / 100;
+
+            const getMacroTotals = () => {
+                let protein = 0, carbs = 0, fat = 0;
+                Object.values(meals).forEach(mealList => {
+                    (mealList || []).forEach(meal => {
+                        if (meal.macros) {
+                            protein += meal.macros.protein;
+                            carbs += meal.macros.carbs;
+                            fat += meal.macros.fat;
+                        }
+                    });
+                });
+                return { protein: Math.round(protein), carbs: Math.round(carbs), fat: Math.round(fat) };
+            };
+
+            const getMacroTargets = () => ({
+                protein: Math.round(dailyTarget * 0.30 / 4),
+                carbs: Math.round(dailyTarget * 0.45 / 4),
+                fat: Math.round(dailyTarget * 0.25 / 9)
+            });
+
+            const addFoodToMeal = (mealType) => {
+                if (!selectedFood) return;
+                const portion = parseFloat(portionSize);
+                const totalCalories = Math.round(getCaloriesPerGram(selectedFood) * portion);
+                const proteinPer100 = getNutrient(selectedFood, 1003);
+                const carbsPer100 = getNutrient(selectedFood, 1005);
+                const fatPer100 = getNutrient(selectedFood, 1004);
+
+                const newMeal = {
+                    id: editingMeal?.id || Date.now(),
+                    name: selectedFood.description,
+                    portion,
+                    calories: totalCalories,
+                    timestamp: editingMeal?.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    macros: {
+                        protein: (proteinPer100 * portion) / 100,
+                        carbs: (carbsPer100 * portion) / 100,
+                        fat: (fatPer100 * portion) / 100
+                    }
+                };
+
+                const currentMealList = meals[mealType] || [];
+                if (editingMeal) {
+                    updateMeals(mealType, currentMealList.map(m => m.id === editingMeal.id ? newMeal : m));
+                } else {
+                    updateMeals(mealType, [...currentMealList, newMeal]);
+                    addRecentFood(selectedFood);
+                }
+
+                setSelectedFood(null);
+                setPortionSize('100');
+                setSearchResults([]);
+                setSearchQuery('');
+                setEditingMeal(null);
+                setSuccess('Meal added successfully!');
+                setTimeout(() => setSuccess(''), 3000);
+            };
+
+            const removeMeal = (mealType, id) => {
+                updateMeals(mealType, (meals[mealType] || []).filter(meal => meal.id !== id));
+            };
+
+            const editMeal = (mealType, meal) => {
+                setEditingMeal({ ...meal, mealType });
+                setSelectedFood(null);
+                setPortionSize(meal.portion.toString());
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+
+            const copyPreviousDay = () => {
+                const prevDate = new Date(selectedDate);
+                prevDate.setDate(prevDate.getDate() - 1);
+                const prevDateStr = prevDate.toISOString().split('T')[0];
+                const prevMeals = allMeals[prevDateStr];
+                if (prevMeals) {
+                    setAllMeals(prev => ({ ...prev, [selectedDate]: prevMeals }));
+                    setSuccess('Previous day meals copied!');
+                    setTimeout(() => setSuccess(''), 3000);
+                }
+            };
+
+            const exportData = () => {
+                let csv = 'Date,Meal Type,Food Name,Portion (g),Calories,Protein (g),Carbs (g),Fat (g)\n';
+                Object.entries(allMeals).forEach(([date, dayMeals]) => {
+                    Object.entries(dayMeals).forEach(([mealType, meals]) => {
+                        (meals || []).forEach(meal => {
+                            csv += `${date},${mealType},"${meal.name}",${meal.portion},${meal.calories},${Math.round(meal.macros.protein)},${Math.round(meal.macros.carbs)},${Math.round(meal.macros.fat)}\n`;
+                        });
+                    });
+                });
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `caltrac-${new Date().toISOString().split('T')[0]}.csv`;
+                a.click();
+            };
+
+            const importData = (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const csv = e.target.result;
+                        const lines = csv.split('\n').slice(1).filter(line => line.trim());
+                        const importedMeals = {};
+
+                        lines.forEach(line => {
+                            const regex = /^(\d{4}-\d{2}-\d{2}),(\w+),"([^"]+)",(\d+(?:\.\d+)?),(\d+(?:\.\d+)?),(\d+(?:\.\d+)?),(\d+(?:\.\d+)?),(\d+(?:\.\d+)?)$/;
+                            const match = line.match(regex);
+
+                            if (match) {
+                                const [, date, mealType, foodName, portion, calories, protein, carbs, fat] = match;
+
+                                if (!importedMeals[date]) importedMeals[date] = {};
+                                if (!importedMeals[date][mealType]) importedMeals[date][mealType] = [];
+
+                                importedMeals[date][mealType].push({
+                                    id: Date.now() + Math.random(),
+                                    name: foodName,
+                                    portion: parseFloat(portion),
+                                    calories: parseInt(calories),
+                                    timestamp: '12:00 PM',
+                                    macros: {
+                                        protein: parseFloat(protein),
+                                        carbs: parseFloat(carbs),
+                                        fat: parseFloat(fat)
+                                    }
+                                });
+                            }
+                        });
+
+                        setAllMeals(prev => ({ ...prev, ...importedMeals }));
+                        setSuccess(`Imported ${lines.length} meals successfully!`);
+                        setTimeout(() => setSuccess(''), 3000);
+                        event.target.value = '';
+                    } catch (err) {
+                        setError('Failed to import CSV. Please check the file format.');
+                        setTimeout(() => setError(''), 3000);
+                    }
+                };
+                reader.readAsText(file);
+            };
+
+            const clearAllData = () => {
+                setAllMeals({});
+                localStorage.removeItem('allMeals');
+                setShowConfirm(false);
+                setSuccess('All data cleared!');
+                setTimeout(() => setSuccess(''), 3000);
+            };
+
+            const updateDailyTarget = () => {
+                const newTarget = parseInt(targetInput);
+                if (newTarget > 0) {
+                    setDailyTarget(newTarget);
+                    localStorage.setItem('dailyTarget', newTarget.toString());
+                    setSuccess('Daily target updated!');
+                    setTimeout(() => setSuccess(''), 3000);
+                } else {
+                    setError('Please enter a valid calorie amount');
+                    setTimeout(() => setError(''), 3000);
+                }
+            };
+
+            const getTotalCalories = () => Object.values(meals).reduce((sum, mealList) => sum + (mealList || []).reduce((mealSum, meal) => mealSum + meal.calories, 0), 0);
+            const getNetCalories = () => getTotalCalories() - parseInt(burnedCalories || 0);
+            const getCaloriesRemaining = () => Math.max(0, dailyTarget - getNetCalories());
+
+            const getWeeklyData = () => {
+                const data = [], labels = [];
+                for (let i = 6; i >= 0; i--) {
+                    const date = new Date();
+                    date.setDate(date.getDate() - i);
+                    const dateStr = date.toISOString().split('T')[0];
+                    const dayMeals = allMeals[dateStr] || {};
+                    const calories = Object.values(dayMeals).reduce((sum, mealList) => sum + (mealList || []).reduce((mealSum, meal) => mealSum + meal.calories, 0), 0);
+                    data.push(calories);
+                    labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
+                }
+                return { labels, data };
+            };
+
+            const getMealBreakdown = () => ({
+                breakfast: (meals.breakfast || []).reduce((sum, m) => sum + m.calories, 0),
+                lunch: (meals.lunch || []).reduce((sum, m) => sum + m.calories, 0),
+                dinner: (meals.dinner || []).reduce((sum, m) => sum + m.calories, 0),
+                snacks: (meals.snacks || []).reduce((sum, m) => sum + m.calories, 0)
+            });
+
+            // Chart effects
+            React.useEffect(() => {
+                if (!weeklyChartRef.current) return;
+                const { labels, data } = getWeeklyData();
+                if (weeklyChartInstance.current) weeklyChartInstance.current.destroy();
+                weeklyChartInstance.current = new Chart(weeklyChartRef.current, {
+                    type: 'line',
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: 'Daily Calories',
+                            data,
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: '#667eea',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 5
+                        }, {
+                            label: 'Daily Target',
+                            data: Array(7).fill(dailyTarget),
+                            borderColor: '#f093fb',
+                            borderDash: [5, 5],
+                            borderWidth: 2,
+                            fill: false,
+                            pointRadius: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: true } },
+                        scales: { y: { beginAtZero: true } }
+                    }
+                });
+            }, [allMeals, dailyTarget]);
+
+            React.useEffect(() => {
+                if (!mealChartRef.current) return;
+                const breakdown = getMealBreakdown();
+                const data = Object.values(breakdown).filter(v => v > 0);
+                const labels = Object.keys(breakdown).filter((_, i) => Object.values(breakdown)[i] > 0).map(m => m.charAt(0).toUpperCase() + m.slice(1));
+                if (mealChartInstance.current) mealChartInstance.current.destroy();
+                mealChartInstance.current = new Chart(mealChartRef.current, {
+                    type: 'doughnut',
+                    data: {
+                        labels,
+                        datasets: [{ data, backgroundColor: ['#667eea', '#f093fb', '#4facfe', '#43e97b'], borderColor: '#fff', borderWidth: 2 }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                });
+            }, [meals]);
+
+            React.useEffect(() => {
+                if (!macroChartRef.current) return;
+                const macros = getMacroTotals();
+                const data = [macros.protein, macros.carbs, macros.fat];
+                if (macroChartInstance.current) macroChartInstance.current.destroy();
+                macroChartInstance.current = new Chart(macroChartRef.current, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Protein', 'Carbs', 'Fat'],
+                        datasets: [{ label: 'Intake (g)', data, backgroundColor: ['#667eea', '#f093fb', '#4facfe'], borderRadius: 6 }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } }
+                });
+            }, [meals]);
+
+            const mealTypes = ['breakfast', 'lunch', 'dinner', 'snacks'];
+            const totalCalories = getTotalCalories();
+            const netCalories = getNetCalories();
+            const remaining = getCaloriesRemaining();
+            const progress = Math.min(100, (netCalories / dailyTarget) * 100);
+
+            return (
+                <div className="container">
+                    <div className="header">
+                        <div style={{ flex: 1 }}>
+                            <h1>🍎 CalTrac</h1>
+                            <p>Your personal nutrition tracker</p>
+                        </div>
+                        <div className="header-controls">
+                            <button className="theme-toggle" onClick={() => setDarkMode(!darkMode)}>
+                                {darkMode ? '☀️ Light' : '🌙 Dark'}
+                            </button>
+                            <button className="data-btn" onClick={exportData}>📥 Export</button>
+                            <label className="data-btn" style={{ cursor: 'pointer', margin: 0 }}>
+                                📤 Import
+                                <input type="file" accept=".csv" onChange={importData} style={{ display: 'none' }} />
+                            </label>
+                            <button className="data-btn" onClick={restoreFromCloud} title="Restore data from cloud">☁️ Restore</button>
+                            <button className="data-btn" style={{ fontSize: '0.8em', opacity: cloudStatus === 'idle' ? 0.6 : 1 }}>
+                                {cloudStatus === 'idle' ? '💾 Synced' : cloudStatus === 'offline' ? '📵 Offline' : cloudStatus}
+                            </button>
+                            <button className="data-btn" onClick={() => setShowConfirm(true)}>🗑️ Clear</button>
+                        </div>
+                    </div>
+
+                    <div className="card">
+                        <div className="date-picker-section">
+                            <div className="date-nav">
+                                <button onClick={() => changeDate(-1)}>← Prev</button>
+                                <span className="current-date">{formatDateDisplay(selectedDate)}</span>
+                                <button onClick={() => changeDate(1)}>Next →</button>
+                            </div>
+                            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                <input type="date" value={selectedDate} onChange={(e) => { setSelectedDate(e.target.value); setBurnedCalories(parseInt(localStorage.getItem('burnedCalories_' + e.target.value) || '0')); setActivityLevel(localStorage.getItem('activityLevel_' + e.target.value) || '0'); }} className="date-picker-input" />
+                                <button className="action-btn" onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}>Today</button>
+                                <button className="action-btn secondary" onClick={copyPreviousDay}>Copy Prev Day</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="card daily-summary">
+                        <div style={{ marginBottom: '15px', display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                            <input
+                                type="number"
+                                value={targetInput}
+                                onChange={(e) => setTargetInput(e.target.value)}
+                                placeholder="Daily target"
+                                style={{ padding: '10px 15px', border: '1px solid var(--border)', borderRadius: '6px', fontSize: '1em', width: '140px' }}
+                            />
+                            <button
+                                onClick={updateDailyTarget}
+                                style={{ padding: '10px 20px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+                            >
+                                Set Target
+                            </button>
+                        </div>
+
+                        <div className="calories-display">{netCalories}</div>
+                        <div className="calories-target">of {dailyTarget} calories · {remaining} remaining</div>
+                        <div className="progress-bar">
+                            <div className="progress-fill" style={{ width: `${progress}%` }}>
+                                {progress > 5 && `${Math.round(progress)}%`}
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginTop: '20px' }}>
+                            <div style={{ background: '#f5f5f5', padding: '15px', borderRadius: '8px' }}>
+                                <h4 style={{ marginBottom: '8px' }}>Eaten</h4>
+                                <div style={{ fontSize: '1.6em', fontWeight: 'bold', color: 'var(--primary)' }}>{totalCalories}</div>
+                            </div>
+                            <div style={{ background: '#f5f5f5', padding: '15px', borderRadius: '8px' }}>
+                                <h4 style={{ marginBottom: '8px' }}>Burned</h4>
+                                <input type="number" value={burnedCalories} onChange={(e) => setBurnedCalories(parseInt(e.target.value) || 0)} placeholder="0" style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid var(--border)' }} />
+                            </div>
+                            <div style={{ background: '#f5f5f5', padding: '15px', borderRadius: '8px' }}>
+                                <h4 style={{ marginBottom: '8px' }}>Remaining</h4>
+                                <div style={{ fontSize: '1.6em', fontWeight: 'bold', color: remaining > 0 ? '#43e97b' : '#ff6b6b' }}>{remaining}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="charts-container">
+                        <div className="chart-card">
+                            <h3>📈 Weekly Trend</h3>
+                            <div className="chart-wrapper">
+                                <canvas ref={weeklyChartRef}></canvas>
+                            </div>
+                        </div>
+                        <div className="chart-card">
+                            <h3>🍽️ Meal Breakdown</h3>
+                            <div className="chart-wrapper">
+                                <canvas ref={mealChartRef}></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="card">
+                        <h2 style={{ marginBottom: '15px', color: 'var(--text)' }}>🥗 Macronutrients</h2>
+                        <div className="chart-card" style={{ boxShadow: 'none', padding: 0, marginBottom: '20px', background: 'transparent' }}>
+                            <div className="chart-wrapper" style={{ height: '250px' }}>
+                                <canvas ref={macroChartRef}></canvas>
+                            </div>
+                        </div>
+
+                        <div className="macro-grid">
+                            {(() => {
+                                const current = getMacroTotals();
+                                const targets = getMacroTargets();
+                                return (
+                                    <>
+                                        <div className="macro-card">
+                                            <div className="macro-label">🍗 PROTEIN</div>
+                                            <div className="macro-current">{current.protein}g</div>
+                                            <div className="macro-target">Target: {targets.protein}g | Can: {Math.max(0, targets.protein - current.protein)}g</div>
+                                            <div className="macro-bar"><div className="macro-bar-fill" style={{ width: `${Math.min(100, (current.protein / targets.protein) * 100)}%` }}></div></div>
+                                        </div>
+                                        <div className="macro-card carbs">
+                                            <div className="macro-label">🌾 CARBS</div>
+                                            <div className="macro-current">{current.carbs}g</div>
+                                            <div className="macro-target">Target: {targets.carbs}g | Can: {Math.max(0, targets.carbs - current.carbs)}g</div>
+                                            <div className="macro-bar"><div className="macro-bar-fill" style={{ width: `${Math.min(100, (current.carbs / targets.carbs) * 100)}%` }}></div></div>
+                                        </div>
+                                        <div className="macro-card fat">
+                                            <div className="macro-label">🥑 FAT</div>
+                                            <div className="macro-current">{current.fat}g</div>
+                                            <div className="macro-target">Target: {targets.fat}g | Can: {Math.max(0, targets.fat - current.fat)}g</div>
+                                            <div className="macro-bar"><div className="macro-bar-fill" style={{ width: `${Math.min(100, (current.fat / targets.fat) * 100)}%` }}></div></div>
+                                        </div>
+                                    </>
+                                );
+                            })()}
+                        </div>
+                    </div>
+
+                    <div className="card">
+                        <h2 style={{ marginBottom: '15px', color: 'var(--text)' }}>Add Food</h2>
+                        {error && <div className="error">{error}</div>}
+                        {success && <div className="success">{success}</div>}
+
+                        {recentFoods.length > 0 && (
+                            <>
+                                <p style={{ fontSize: '0.9em', color: '#666', marginBottom: '8px' }}>Recent foods:</p>
+                                <div className="recent-foods">
+                                    {recentFoods.map((food, idx) => (
+                                        <button key={idx} className="recent-food-btn" onClick={() => { setSelectedFood(food); setSearchResults([]); }}>
+                                            {food.description.split(',')[0].slice(0, 25)}...
+                                        </button>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+
+                        <form onSubmit={searchFoods} className="search-group">
+                            <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search: apple, chicken, rice..." />
+                            <button type="submit">Search</button>
+                        </form>
+
+                        {loading && <div className="loading">Searching...</div>}
+
+                        {searchResults.length > 0 && !selectedFood && (
+                            <div className="search-results">
+                                {searchResults.map((food, idx) => (
+                                    <div key={idx} className="search-result-item">
+                                        <div className="food-info">
+                                            <div className="food-name">{food.description}</div>
+                                            <div className="food-calories">{Math.round(getCaloriesPerGram(food) * 100)} cal/100g</div>
+                                        </div>
+                                        <button className="add-btn" onClick={() => setSelectedFood(food)}>Select</button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {selectedFood && (
+                            <div style={{ background: '#f5f5f5', padding: '15px', borderRadius: '6px' }}>
+                                <div style={{ fontWeight: 'bold', marginBottom: '10px', color: 'var(--text)' }}>{selectedFood.description}</div>
+                                <div className="portion-input">
+                                    <label>Weight (g):</label>
+                                    <input type="number" value={portionSize} onChange={(e) => setPortionSize(e.target.value)} min="1" />
+                                    <span style={{ fontWeight: 'bold', color: 'var(--primary)' }}>≈ {Math.round(getCaloriesPerGram(selectedFood) * parseFloat(portionSize))} cal</span>
+                                </div>
+                                <div style={{ display: 'flex', gap: '10px', marginTop: '15px', flexWrap: 'wrap' }}>
+                                    {mealTypes.map(type => (
+                                        <button key={type} className="add-btn" onClick={() => addFoodToMeal(type)} style={{ flex: 1, minWidth: '80px' }}>
+                                            Add to {type.charAt(0).toUpperCase() + type.slice(1)}
+                                        </button>
+                                    ))}
+                                </div>
+                                <button style={{ marginTop: '10px', width: '100%', padding: '8px', background: '#999', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }} onClick={() => { setSelectedFood(null); setEditingMeal(null); }}>Cancel</button>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="card">
+                        <h2 style={{ marginBottom: '15px', color: 'var(--text)' }}>Today's Meals</h2>
+                        {mealTypes.map(mealType => (
+                            <div key={mealType}>
+                                <h3 style={{ textTransform: 'capitalize', color: 'var(--primary)', marginBottom: '10px' }}>
+                                    {mealType} ({(meals[mealType] || []).reduce((sum, m) => sum + m.calories, 0)} cal)
+                                </h3>
+                                {meals[mealType] && meals[mealType].length > 0 ? (
+                                    meals[mealType].map(meal => (
+                                        <div key={meal.id} className="meal-item">
+                                            <div className="meal-item-info">
+                                                <div className="meal-item-name">{meal.name}</div>
+                                                <div className="meal-item-details">{meal.portion}g · {meal.timestamp} · P:{Math.round(meal.macros.protein)}g C:{Math.round(meal.macros.carbs)}g F:{Math.round(meal.macros.fat)}g</div>
+                                            </div>
+                                            <div style={{ fontWeight: 'bold', color: 'var(--primary)', marginRight: '10px' }}>{meal.calories} cal</div>
+                                            <div className="meal-item-actions">
+                                                <button className="edit-btn" onClick={() => editMeal(mealType, meal)}>Edit</button>
+                                                <button className="delete-btn" onClick={() => removeMeal(mealType, meal.id)}>Delete</button>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="empty-message">No items yet</div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="card">
+                        <h2 style={{ marginBottom: '15px', color: 'var(--text)' }}>📊 Last 7 Days</h2>
+                        <div className="weekly-stats">
+                            {(() => {
+                                const stats = [];
+                                for (let i = 6; i >= 0; i--) {
+                                    const date = new Date();
+                                    date.setDate(date.getDate() - i);
+                                    const dateStr = date.toISOString().split('T')[0];
+                                    const dayMeals = allMeals[dateStr] || {};
+                                    const calories = Object.values(dayMeals).reduce((sum, mealList) => sum + (mealList || []).reduce((mealSum, meal) => mealSum + meal.calories, 0), 0);
+                                    const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+                                    let statusClass = '';
+                                    if (calories > 0 && calories >= dailyTarget * 0.9 && calories <= dailyTarget * 1.1) statusClass = 'completed';
+                                    else if (calories > dailyTarget) statusClass = 'over';
+                                    stats.push({ dayName, calories, statusClass });
+                                }
+                                return stats.map((stat, idx) => (
+                                    <div key={idx} className={`day-stat ${stat.statusClass}`}>
+                                        <div className="day-name">{stat.dayName}</div>
+                                        <div className="day-calories">{stat.calories}</div>
+                                    </div>
+                                ));
+                            })()}
+                        </div>
+                    </div>
+
+                    {showConfirm && (
+                        <div className="modal-overlay">
+                            <div className="modal">
+                                <h2>Clear All Data?</h2>
+                                <p>This will permanently delete all your meal history. This action cannot be undone.</p>
+                                <div className="modal-buttons">
+                                    <button className="confirm" onClick={clearAllData}>Clear</button>
+                                    <button className="cancel" onClick={() => setShowConfirm(false)}>Cancel</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        ReactDOM.render(<CalorieTracker />, document.getElementById('root'));
+    </script>
+</body>
+</html>
