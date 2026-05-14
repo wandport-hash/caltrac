@@ -825,7 +825,7 @@
 
             const restoreFromCloud = React.useCallback(async () => {
                 try {
-                    setCloudStatus('restoring...';
+                    setCloudStatus('restoring...');
                     const response = await fetch(`${BACKUP_SERVER}/api/restore/${deviceId}`);
                     const result = await response.json();
 
